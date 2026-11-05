@@ -302,7 +302,7 @@ const SCENARIO_DETAILS: Record<string, ScenarioDetail> = {
     ],
     renderVisual: (opt) => (
       <Canvas bg="bg-slate-200">
-        <div className={`w-64 h-96 bg-white rounded-[2rem] shadow-xl border-[6px] border-slate-800 overflow-hidden flex flex-col ${opt === 'B' ? 'p-6 justify-between' : 'p-4 gap-2'}`}>
+        <div className={`w-52 sm:w-64 h-72 sm:h-80 bg-white rounded-[2rem] shadow-xl border-[6px] border-slate-800 overflow-hidden flex flex-col ${opt === 'B' ? 'p-6 justify-between' : 'p-4 gap-2'}`}>
            <div>
              <h3 className="font-bold text-lg mb-4">Cart summary</h3>
              <div className={`bg-slate-100 rounded flex items-center p-2 mb-2 ${opt === 'C' ? 'h-8 text-xs' : 'h-12'}`}>Item 1 <span className="ml-auto">$12</span></div>
@@ -312,17 +312,17 @@ const SCENARIO_DETAILS: Record<string, ScenarioDetail> = {
            <div className={`flex ${opt === 'B' ? 'flex-col gap-3 mt-auto' : opt === 'A' ? 'flex-col gap-2 mt-4' : 'flex-wrap gap-2 mt-4'}`}>
               {!opt || opt === 'C' || opt === 'A' ? (
                 <>
-                  <button className={`bg-slate-200 text-slate-700 rounded w-full ${opt === 'C' ? 'p-1 text-xs' : 'p-2'}`}>Apply Coupon</button>
-                  <button className={`bg-slate-200 text-slate-700 rounded w-full ${opt === 'C' ? 'p-1 text-xs' : 'p-2'}`}>Save for Later</button>
-                  <button className={`bg-slate-800 text-white rounded w-full ${opt === 'C' ? 'p-1 text-xs' : 'p-2'}`}>Checkout</button>
+                  <div className={`bg-slate-200 text-slate-700 rounded w-full ${opt === 'C' ? 'p-1 text-xs' : 'p-2'}`}>Apply Coupon</div>
+                  <div className={`bg-slate-200 text-slate-700 rounded w-full ${opt === 'C' ? 'p-1 text-xs' : 'p-2'}`}>Save for Later</div>
+                  <div className={`bg-slate-800 text-white rounded w-full ${opt === 'C' ? 'p-1 text-xs' : 'p-2'}`}>Checkout</div>
                 </>
               ) : (
                 <>
                   <div className="flex gap-2">
-                    <button className="bg-slate-100 text-slate-500 font-medium rounded-xl p-3 flex-1 text-sm">Coupon</button>
-                    <button className="bg-slate-100 text-slate-500 font-medium rounded-xl p-3 flex-1 text-sm">Save</button>
+                    <div className="bg-slate-100 text-slate-500 font-medium rounded-xl p-3 flex-1 text-sm">Coupon</div>
+                    <div className="bg-slate-100 text-slate-500 font-medium rounded-xl p-3 flex-1 text-sm">Save</div>
                   </div>
-                  <button className="bg-violet-600 text-white font-bold rounded-2xl p-4 shadow-lg shadow-violet-200">Checkout Now</button>
+                  <div className="bg-violet-600 text-white font-bold rounded-2xl p-4 shadow-lg shadow-violet-200">Checkout Now</div>
                 </>
               )}
            </div>
@@ -330,7 +330,7 @@ const SCENARIO_DETAILS: Record<string, ScenarioDetail> = {
       </Canvas>
     ),
     getBefore: () => <div className="w-32 h-48 bg-white border-4 border-slate-800 rounded-xl p-2 flex flex-col gap-1"><div className="h-6 bg-slate-100 mb-2"></div><div className="h-6 bg-slate-200 mt-auto"></div><div className="h-6 bg-slate-200"></div><div className="h-6 bg-slate-700 text-[8px] text-white flex items-center justify-center">Checkout</div></div>,
-    getAfter: () => <div className="w-32 h-48 bg-white border-4 border-slate-800 rounded-xl p-3 flex flex-col"><div className="h-6 bg-slate-100 mb-2"></div><button className="mt-auto bg-violet-600 rounded-lg p-2 text-white text-[10px] font-bold">Checkout</button></div>
+    getAfter: () => <div className="w-32 h-48 bg-white border-4 border-slate-800 rounded-xl p-3 flex flex-col"><div className="h-6 bg-slate-100 mb-2"></div><div className="mt-auto bg-violet-600 rounded-lg p-2 text-white text-[10px] font-bold">Checkout</div></div>
   },
   's6': {
     clientBrief: "We wanted a clean, minimalist finance dashboard, but users don't know which elements they can click on.",
@@ -345,13 +345,13 @@ const SCENARIO_DETAILS: Record<string, ScenarioDetail> = {
         <div className={`p-8 w-3/4 h-3/4 shadow-md rounded-xl flex flex-col gap-4 ${opt === 'B' ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-white border-slate-200 text-slate-600'}`}>
            <h3 className={`font-semibold ${opt === 'C' ? 'underline' : ''}`}>Transfer Funds</h3>
            <div className={`p-3 rounded border ${opt === 'B' ? 'border-slate-600 bg-slate-700' : 'border-slate-200 bg-slate-50'}`}>Amount: $500.00</div>
-           <button className={`mt-auto p-3 rounded font-medium transition-colors ${
+           <div className={`mt-auto p-3 rounded font-medium transition-colors ${
              opt === 'A' ? 'bg-blue-600 text-white shadow-md' :
              opt === 'B' ? 'bg-slate-600 text-slate-300' :
              'bg-slate-200 text-slate-500'
            }`}>
              <span className={opt === 'C' ? 'underline' : ''}>Confirm Transfer</span>
-           </button>
+           </div>
         </div>
       </Canvas>
     ),
@@ -438,7 +438,7 @@ const SCENARIO_DETAILS: Record<string, ScenarioDetail> = {
 };
 
 // --- SCENARIO ENGINE (INTERACTIVE VIEW) ---
-const ScenarioEngine = ({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) => {
+const ScenarioEngine = ({ scenario, onExit, onComplete }: { scenario: Scenario; onExit: () => void; onComplete: (scenario: Scenario, selectedOption: string, isCorrect: boolean) => void }) => {
   const [stage, setStage] = useState<'challenge' | 'feedback'>('challenge');
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
@@ -446,7 +446,7 @@ const ScenarioEngine = ({ scenario, onExit }: { scenario: Scenario; onExit: () =
   if (!details) return <div className="p-8 text-center text-red-500 font-bold">Scenario configuration missing.</div>;
 
   return (
-    <div className="max-w-7xl mx-auto animate-in fade-in duration-500 pb-20">
+    <div className="w-full mx-auto animate-in fade-in duration-500 pb-12">
       
       {/* Breadcrumb Header */}
       <div className="mb-6">
@@ -456,7 +456,7 @@ const ScenarioEngine = ({ scenario, onExit }: { scenario: Scenario; onExit: () =
         <p className="text-xs font-bold tracking-widest text-indigo-500 uppercase mb-2">
           {scenario.category} / {scenario.concept}
         </p>
-        <h1 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-800 tracking-tight flex flex-wrap items-center gap-2 sm:gap-3 break-words">
           {scenario.title} 
           <span className="text-xs bg-slate-800 text-white px-3 py-1 rounded-md font-bold tracking-widest translate-y-0.5">
             {scenario.difficulty}
@@ -465,9 +465,9 @@ const ScenarioEngine = ({ scenario, onExit }: { scenario: Scenario; onExit: () =
       </div>
 
       {stage === 'challenge' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:h-[650px]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:items-stretch">
           {/* LEFT: Live Interactive Canvas */}
-          <GlassCard className="p-4 h-[400px] lg:h-full relative flex flex-col border-2 border-white/80">
+          <GlassCard className="p-3 sm:p-4 h-[340px] sm:h-[440px] lg:h-[650px] relative flex flex-col border-2 border-white/80">
             <div className="absolute top-6 left-6 z-20">
               <span className="bg-white/90 backdrop-blur-md text-indigo-900 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm border border-slate-100 flex items-center gap-2">
                 <MousePointerClick className="w-3 h-3 text-indigo-500" />
@@ -478,9 +478,9 @@ const ScenarioEngine = ({ scenario, onExit }: { scenario: Scenario; onExit: () =
           </GlassCard>
 
           {/* RIGHT: Client Brief & Challenge */}
-          <div className="flex flex-col h-full space-y-4">
+          <div className="flex flex-col min-w-0 space-y-4">
             
-            <GlassCard className="p-6 border-l-4 border-l-indigo-500 flex items-start gap-4">
+            <GlassCard className="p-4 sm:p-6 border-l-4 border-l-indigo-500 flex items-start gap-3 sm:gap-4">
                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
                   <User className="w-5 h-5 text-indigo-600" />
                </div>
@@ -504,14 +504,16 @@ const ScenarioEngine = ({ scenario, onExit }: { scenario: Scenario; onExit: () =
               </ul>
             </GlassCard>
 
-            <GlassCard className="p-6 flex-1 flex flex-col border-2 border-indigo-50">
+            <GlassCard className="p-4 sm:p-6 flex-1 flex flex-col border-2 border-indigo-50">
               <h3 className="text-xl font-black text-slate-800 mb-2">Your Challenge</h3>
               <p className="text-slate-500 text-sm font-medium mb-4">Select a solution to preview its effect.</p>
               
-              <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-3 flex-1">
                 {details.options.map(opt => (
                   <button 
                     key={opt.id}
+                    type="button"
+                    aria-pressed={selectedOption === opt.id}
                     onClick={() => setSelectedOption(opt.id)}
                     className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-center gap-4 ${
                       selectedOption === opt.id 
@@ -530,7 +532,7 @@ const ScenarioEngine = ({ scenario, onExit }: { scenario: Scenario; onExit: () =
               </div>
 
               <div className="pt-4 mt-2 border-t border-slate-200/50 flex justify-end">
-                <GlassButton primary disabled={!selectedOption} onClick={() => setStage('feedback')}>
+                <GlassButton primary className="w-full sm:w-auto min-h-12" disabled={!selectedOption} onClick={() => setStage('feedback')}>
                   Submit Decision <ArrowRight className="w-5 h-5 ml-1" />
                 </GlassButton>
               </div>
@@ -540,8 +542,8 @@ const ScenarioEngine = ({ scenario, onExit }: { scenario: Scenario; onExit: () =
       ) : (
         /* FEEDBACK STAGE */
         <div className="animate-in slide-in-from-bottom-8 duration-500">
-          <GlassCard className="p-8 lg:p-12 border-2 border-white/80">
-            <div className="flex flex-col md:flex-row gap-10 items-center">
+          <GlassCard className="p-4 sm:p-8 lg:p-12 border-2 border-white/80">
+            <div className="flex flex-col md:flex-row gap-5 sm:gap-8 lg:gap-10 items-center">
               
               {/* Animated Before/After Simulation */}
               <div className="w-full md:w-1/2">
@@ -556,20 +558,25 @@ const ScenarioEngine = ({ scenario, onExit }: { scenario: Scenario; onExit: () =
                   ) : (
                     <div className="bg-rose-100 p-3 rounded-2xl"><XCircle className="w-10 h-10 text-rose-600" /></div>
                   )}
-                  <h2 className="text-3xl font-black text-slate-800">
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-800">
                     {details.options.find(o => o.id === selectedOption)?.isCorrect ? 'Correct Decision!' : 'Let\'s Review.'}
                   </h2>
                 </div>
                 
-                <div className="p-6 bg-white/70 rounded-2xl border border-white shadow-sm">
+                <div className="p-4 sm:p-6 bg-white/70 rounded-2xl border border-white shadow-sm">
                   <p className="text-lg text-slate-700 font-medium leading-relaxed">
                     {details.options.find(o => o.id === selectedOption)?.explanation}
                   </p>
                 </div>
 
-                <div className="pt-4 flex gap-4">
-                  <GlassButton onClick={onExit} primary className="w-full">
-                    Complete Scenario <CheckCircle className="w-5 h-5 ml-2" />
+                <div className="pt-4 flex flex-col sm:flex-row gap-3">
+                  <GlassButton onClick={() => { setSelectedOption(null); setStage('challenge'); }} className="w-full min-h-12">
+                    Try Again
+                  </GlassButton>
+                  <GlassButton onClick={() => {
+                    if (selectedOption) onComplete(scenario, selectedOption, Boolean(details.options.find(o => o.id === selectedOption)?.isCorrect));
+                  }} primary className="w-full min-h-12">
+                    Save Result <CheckCircle className="w-5 h-5 ml-2" />
                   </GlassButton>
                 </div>
               </div>
