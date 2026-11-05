@@ -589,140 +589,220 @@ const ScenarioEngine = ({ scenario, onExit, onComplete }: { scenario: Scenario; 
 };
 
 // --- MAIN APP (SCENARIO LAB) ---
+type AppView = 'home' | 'explore' | 'cases' | 'scenario';
+type CaseResult = {
+  scenarioId: string;
+  selectedOption: string;
+  correct: boolean;
+  completedAt: string;
+  attempts: number;
+};
+type CaseHistory = Record<string, CaseResult>;
+const STORAGE_KEY = 'scenario-lab:completed-cases:v1';
+
+const loadCases = (): CaseHistory => {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || '{}');
+    return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved as CaseHistory : {};
+  } catch {
+    return {};
+  }
+};
+
 export default function App() {
-  const [currentView, setCurrentView] = useState('home');
+  const [currentView, setCurrentView] = useState<AppView>('home');
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [caseHistory, setCaseHistory] = useState<CaseHistory>(loadCases);
 
-  const handleStartScenario = (scenario: Scenario) => {
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(caseHistory));
+    } catch {
+      // The app still works when browser storage is disabled.
+    }
+  }, [caseHistory]);
+
+  const navigate = (view: AppView) => {
+    setCurrentView(view);
+    setActiveScenario(null);
+  };
+  const startScenario = (scenario: Scenario) => {
     setActiveScenario(scenario);
     setCurrentView('scenario');
   };
-
-  const NavTab = ({ label, active, onClick }: { label: string; active?: boolean; onClick: () => void }) => (
-    <button 
-      onClick={onClick}
-      className={`px-5 py-2 rounded-full font-bold transition-all duration-300 ${
-        active 
-          ? 'bg-indigo-600 text-white shadow-md' 
-          : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
-      }`}
-    >
-      {label}
-    </button>
-  );
+  const completeScenario = (scenario: Scenario, selectedOption: string, correct: boolean) => {
+    setCaseHistory(previous => ({
+      ...previous,
+      [scenario.id]: {
+        scenarioId: scenario.id,
+        selectedOption,
+        correct,
+        completedAt: new Date().toISOString(),
+        attempts: (previous[scenario.id]?.attempts || 0) + 1
+      }
+    }));
+    navigate('cases');
+  };
 
   const categories = ['All', ...new Set(SCENARIOS.map(s => s.category))];
   const filteredScenarios = activeFilter === 'All' ? SCENARIOS : SCENARIOS.filter(s => s.category === activeFilter);
+  const completedScenarios = SCENARIOS.filter(s => caseHistory[s.id]);
+  const solvedCount = completedScenarios.filter(s => caseHistory[s.id].correct).length;
+  const displayScenarios = currentView === 'cases'
+    ? completedScenarios
+    : currentView === 'home' ? SCENARIOS.slice(0, 4) : filteredScenarios;
+
+  const navItems: { label: string; view: AppView }[] = [
+    { label: 'Home', view: 'home' },
+    { label: 'Explore Scenarios', view: 'explore' },
+    { label: 'My Cases', view: 'cases' }
+  ];
 
   return (
-    <div className="min-h-screen text-slate-800 font-sans relative selection:bg-indigo-200 flex flex-col overflow-hidden bg-slate-50">
-      
-      {/* Background Gradient Orbs */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-200/40 blur-3xl mix-blend-multiply"></div>
-        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[60%] rounded-full bg-purple-200/40 blur-3xl mix-blend-multiply"></div>
-        <div className="absolute bottom-[-20%] left-[20%] w-[60%] h-[50%] rounded-full bg-blue-200/40 blur-3xl mix-blend-multiply"></div>
+    <div className="min-h-[100svh] bg-slate-50 text-slate-800 font-sans relative flex flex-col overflow-x-clip selection:bg-indigo-200">
+      <div className="fixed inset-0 overflow-hidden z-0 pointer-events-none" aria-hidden="true">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-200/40 blur-3xl mix-blend-multiply" />
+        <div className="absolute top-[20%] right-[-10%] w-[40%] h-[60%] rounded-full bg-purple-200/40 blur-3xl mix-blend-multiply" />
+        <div className="absolute bottom-[-20%] left-[20%] w-[60%] h-[50%] rounded-full bg-blue-200/40 blur-3xl mix-blend-multiply" />
       </div>
 
-      {/* Top Navigation */}
-      <nav className="relative z-50 p-4 lg:px-8 pt-6">
-        <div className="max-w-7xl mx-auto bg-white/50 backdrop-blur-xl border border-white shadow-sm rounded-full px-6 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentView('home')}>
-             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center transform -rotate-6 shadow-md">
-               <Palette className="w-4 h-4 text-white" />
-             </div>
-             <span className="font-black text-xl text-slate-800 tracking-tight">SCENARIO LAB</span>
-          </div>
-          
-          <div className="hidden md:flex gap-2">
-            <NavTab label="Home" active={currentView === 'home'} onClick={() => setCurrentView('home')} />
-            <NavTab label="Explore Scenarios" active={currentView === 'explore'} onClick={() => setCurrentView('explore')} />
-            <NavTab label="My Cases" onClick={() => {}} />
+      <header className="relative z-30 px-3 sm:px-6 lg:px-8 pt-3 sm:pt-6">
+        <div className="max-w-7xl mx-auto bg-white/75 backdrop-blur-xl border border-white shadow-sm rounded-2xl lg:rounded-full p-3 sm:px-6 sm:py-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 sm:gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <button type="button" aria-label="Scenario Lab home" onClick={() => navigate('home')}
+              className="flex min-w-0 items-center gap-2.5 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">
+              <span className="w-9 h-9 shrink-0 bg-indigo-600 rounded-lg flex items-center justify-center -rotate-6 shadow-md">
+                <Palette className="w-5 h-5 text-white" />
+              </span>
+              <span className="font-black text-lg sm:text-xl text-slate-800 tracking-tight truncate">SCENARIO LAB</span>
+            </button>
+            <button type="button" aria-label="Open My Cases" title="My Cases" onClick={() => navigate('cases')}
+              className="lg:hidden relative flex shrink-0 w-11 h-11 bg-indigo-50 rounded-full items-center justify-center border border-indigo-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">
+              <CheckCircle className="w-5 h-5 text-indigo-700" />
+              {completedScenarios.length > 0 && <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-indigo-600 text-white rounded-full min-w-5 px-1 py-0.5">{completedScenarios.length}</span>}
+            </button>
           </div>
 
-          <div className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-sm border border-slate-200 cursor-pointer hover:bg-white transition-colors">
-            <User className="w-5 h-5 text-indigo-600" />
-          </div>
+          <nav aria-label="Main navigation" className="flex gap-1.5 sm:gap-2 overflow-x-auto w-full lg:w-auto py-0.5">
+            {navItems.map(item => (
+              <button type="button" key={item.view} onClick={() => navigate(item.view)}
+                aria-current={currentView === item.view ? 'page' : undefined}
+                className={[
+                  'shrink-0 min-h-11 px-3 sm:px-5 py-2 rounded-full text-sm sm:text-base font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600',
+                  currentView === item.view ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-700 hover:bg-indigo-50 hover:text-indigo-900'
+                ].join(' ')}>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          <button type="button" aria-label="Open My Cases" title="My Cases" onClick={() => navigate('cases')}
+            className="hidden lg:flex relative w-10 h-10 bg-indigo-50 rounded-full items-center justify-center border border-indigo-100 hover:bg-indigo-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">
+            <CheckCircle className="w-5 h-5 text-indigo-700" />
+            {completedScenarios.length > 0 && <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-indigo-600 text-white rounded-full min-w-5 px-1 py-0.5">{completedScenarios.length}</span>}
+          </button>
         </div>
-      </nav>
+      </header>
 
-      {/* Main Content Area */}
-      <main className="relative z-10 w-full flex-1 pt-8 px-6 pb-24 overflow-y-auto h-[calc(100vh-100px)] custom-scrollbar">
-        
-        {/* EXPLORE / HOME VIEW */}
-        {(currentView === 'home' || currentView === 'explore') && (
-          <div className="max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-             
-             <div className="mb-10 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                  <h1 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight mb-3">Explore Design Scenarios</h1>
-                  <p className="text-lg text-slate-600 font-medium">Real-world multimedia problems. Your design decisions. Instant feedback.</p>
-                </div>
-                
-                {/* Category Filters */}
-                <div className="flex flex-wrap gap-2 justify-center md:justify-end">
-                  {categories.map(cat => (
-                    <button 
-                      key={cat}
-                      onClick={() => setActiveFilter(cat)}
-                      className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all border ${
-                        activeFilter === cat 
-                        ? 'bg-slate-800 text-white border-slate-800' 
-                        : 'bg-white/60 text-slate-600 border-slate-300 hover:bg-white'
-                      }`}
-                    >
-                      {cat}
+      <main id="main-content" className="relative z-10 w-full max-w-7xl mx-auto flex-1 px-3 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-16">
+        {currentView === 'home' && (
+          <section aria-labelledby="welcome-title" className="mb-8 sm:mb-10 rounded-3xl bg-white/70 border border-white/80 shadow-sm p-5 sm:p-8 lg:p-10">
+            <p className="text-xs font-bold tracking-widest text-indigo-700 uppercase mb-3">Interactive design learning</p>
+            <h1 id="welcome-title" className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 max-w-3xl">Learn design by fixing real problems.</h1>
+            <p className="mt-3 text-sm sm:text-lg text-slate-600 max-w-2xl">Choose a client brief, compare design solutions and get instant feedback. Save progress as you complete each scenario.</p>
+            <div className="mt-6 flex flex-col sm:flex-row flex-wrap gap-3">
+              <GlassButton primary className="w-full sm:w-auto min-h-12" onClick={() => navigate('explore')}>Explore all scenarios <ArrowRight className="w-4 h-4" /></GlassButton>
+              <GlassButton className="w-full sm:w-auto min-h-12" onClick={() => navigate('cases')}>View My Cases</GlassButton>
+            </div>
+            <div aria-label="Learning progress" className="mt-6 grid grid-cols-3 gap-2 sm:gap-4 max-w-lg">
+              <div className="rounded-2xl bg-slate-50 p-3 sm:p-4"><div className="text-xl sm:text-3xl font-black">{SCENARIOS.length}</div><div className="text-xs sm:text-sm text-slate-600">Scenarios</div></div>
+              <div className="rounded-2xl bg-slate-50 p-3 sm:p-4"><div className="text-xl sm:text-3xl font-black">{completedScenarios.length}</div><div className="text-xs sm:text-sm text-slate-600">Completed</div></div>
+              <div className="rounded-2xl bg-slate-50 p-3 sm:p-4"><div className="text-xl sm:text-3xl font-black">{solvedCount}</div><div className="text-xs sm:text-sm text-slate-600">Solved</div></div>
+            </div>
+          </section>
+        )}
+
+        {currentView !== 'scenario' && (
+          <section aria-labelledby="scenario-heading">
+            <div className="mb-6 sm:mb-8 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+              <div>
+                <h2 id="scenario-heading" className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">
+                  {currentView === 'home' ? 'Start a design challenge' : currentView === 'cases' ? 'My Cases' : 'Explore Design Scenarios'}
+                </h2>
+                <p className="mt-2 text-sm sm:text-base text-slate-600">
+                  {currentView === 'cases'
+                    ? completedScenarios.length + ' of ' + SCENARIOS.length + ' completed · ' + solvedCount + ' correct'
+                    : 'Real-world multimedia problems. Your decisions. Instant feedback.'}
+                </p>
+                {currentView === 'cases' && <p className="mt-1 text-xs sm:text-sm text-slate-500">Your progress is saved locally in this browser.</p>}
+              </div>
+              {currentView === 'explore' && (
+                <div role="group" aria-label="Filter by category" className="flex flex-wrap gap-2">
+                  {categories.map(category => (
+                    <button type="button" key={category} onClick={() => setActiveFilter(category)}
+                      aria-pressed={activeFilter === category}
+                      className={[
+                        'min-h-10 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600',
+                        activeFilter === category ? 'bg-slate-800 text-white border-slate-800' : 'bg-white/80 text-slate-700 border-slate-300 hover:bg-indigo-50'
+                      ].join(' ')}>
+                      {category}
                     </button>
                   ))}
                 </div>
-             </div>
+              )}
+            </div>
 
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredScenarios.map(scenario => {
+            {currentView === 'cases' && completedScenarios.length === 0 ? (
+              <GlassCard className="p-6 sm:p-10 text-center">
+                <CheckCircle className="w-12 h-12 text-indigo-500 mx-auto mb-4" />
+                <h3 className="text-xl sm:text-2xl font-black">No completed cases yet</h3>
+                <p className="text-slate-600 mt-2 mb-6">Finish a challenge and save the result to see it here.</p>
+                <GlassButton primary className="mx-auto min-h-12" onClick={() => navigate('explore')}>Explore Scenarios <ArrowRight className="w-4 h-4" /></GlassButton>
+              </GlassCard>
+            ) : (
+              <div className="grid grid-cols-1 min-[540px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                {displayScenarios.map(scenario => {
                   const IconComponent = scenario.icon;
+                  const saved = caseHistory[scenario.id];
                   return (
-                    <GlassCard key={scenario.id} className="flex flex-col group hover:shadow-2xl hover:border-white transition-all duration-300 cursor-pointer" onClick={() => handleStartScenario(scenario)}>
-                      
-                      {/* Visual Header */}
-                      <div className={`h-40 w-full bg-gradient-to-br ${scenario.colorFrom} ${scenario.colorTo} relative overflow-hidden flex items-center justify-center p-6`}>
-                        <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]"></div>
-                        <IconComponent className="w-16 h-16 text-white/90 relative z-10 drop-shadow-md transform group-hover:scale-110 transition-transform duration-500" />
-                        
-                        <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-md border border-white/20 uppercase tracking-wider">
-                          {scenario.difficulty}
+                    <GlassCard key={scenario.id} className="h-full group hover:shadow-xl focus-within:ring-2 focus-within:ring-indigo-500 transition-shadow">
+                      <button type="button" aria-label={'Start ' + scenario.title} onClick={() => startScenario(scenario)}
+                        className="w-full h-full text-left flex flex-col focus-visible:outline-none">
+                        <div className={['h-36 sm:h-40 w-full bg-gradient-to-br relative overflow-hidden flex items-center justify-center p-6', scenario.colorFrom, scenario.colorTo].join(' ')}>
+                          <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
+                          <IconComponent className="w-14 h-14 sm:w-16 sm:h-16 text-white/90 relative z-10 drop-shadow-md group-hover:scale-110 transition-transform duration-300" />
+                          <span className="absolute top-3 right-3 bg-black/40 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase">{scenario.difficulty}</span>
                         </div>
-                      </div>
-                      
-                      {/* Content */}
-                      <div className="p-6 flex flex-col flex-1">
-                        <div className="text-[10px] font-bold text-indigo-500 tracking-widest uppercase mb-1 flex items-center gap-1">
-                          {scenario.category}
+                        <div className="p-4 sm:p-6 flex flex-col flex-1 w-full">
+                          <div className="text-[10px] font-bold text-indigo-700 tracking-widest uppercase mb-1">{scenario.category}</div>
+                          <h3 className="text-lg sm:text-xl font-black text-slate-800 mb-2 leading-tight">{scenario.title}</h3>
+                          <p className="text-slate-600 text-sm font-medium mb-5 flex-1">{scenario.description}</p>
+                          <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                            <span className="text-indigo-700 font-bold text-sm inline-flex items-center gap-1">
+                              {saved ? 'Try again' : 'Solve Problem'} <ArrowRight className="w-4 h-4" />
+                            </span>
+                            {saved && <span className={['rounded-full px-2 py-1 text-[10px] font-bold', saved.correct ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'].join(' ')}>{saved.correct ? 'Solved' : 'Reviewed'}</span>}
+                          </div>
                         </div>
-                        <h3 className="text-xl font-black text-slate-800 mb-2 leading-tight">{scenario.title}</h3>
-                        <p className="text-slate-600 text-sm font-medium mb-6 line-clamp-2">{scenario.description}</p>
-                        
-                        <div className="mt-auto pt-4 border-t border-slate-200/60">
-                          <button className="text-indigo-600 font-bold text-sm flex items-center group-hover:text-indigo-800 transition-colors">
-                            Solve Problem <ArrowRight className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" />
-                          </button>
-                        </div>
-                      </div>
+                      </button>
                     </GlassCard>
                   );
                 })}
-             </div>
-          </div>
+              </div>
+            )}
+
+            {currentView === 'home' && (
+              <div className="mt-7 text-center">
+                <GlassButton className="mx-auto min-h-12" onClick={() => navigate('explore')}>See all 8 scenarios <ArrowRight className="w-4 h-4" /></GlassButton>
+              </div>
+            )}
+          </section>
         )}
 
-        {/* SCENARIO ENGINE VIEW */}
         {currentView === 'scenario' && activeScenario && (
-          <ScenarioEngine 
-            scenario={activeScenario} 
-            onExit={() => setCurrentView('explore')} 
-          />
+          <ScenarioEngine key={activeScenario.id} scenario={activeScenario} onExit={() => navigate('explore')} onComplete={completeScenario} />
         )}
-
       </main>
     </div>
   );
